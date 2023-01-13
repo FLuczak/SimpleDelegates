@@ -1,4 +1,4 @@
-#Fluczak Simple delegates
+# Fluczak Simple delegates
 
 Simple delegates is a simple implementation of multicast delegates created and maintained by Franciszek Łuczak. It was created to quickly implement multicast delegates in C++ projects. It is a single header library.
 
