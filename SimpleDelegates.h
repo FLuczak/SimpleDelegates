@@ -28,7 +28,7 @@ namespace sdel
 		 * \tparam T of an instance: \param t
 		 */
 		template<typename T>
-		void Bind(T* t, ReturnType(T::* a_method)(Args...))
+		void bind(T* t, ReturnType(T::* a_method)(Args...))
 		{
 			std::function<ReturnType(Args...)> tempFunction = [=](Args ... as) { (t->*a_method)(as...); };
 			auto p = void_cast(a_method);
@@ -39,7 +39,7 @@ namespace sdel
 		 * Binds a global  function \param a_method  of type:
 		 * \tparam T
 		*/
-		void Bind(ReturnType(*a_method)(Args...))
+		void bind(ReturnType(*a_method)(Args...))
 		{
 			std::function<ReturnType(Args...)> tempFunction = [=](Args ... as) { (*a_method)(as...); };
 			m_functions.insert(std::pair<std::pair<void*, int*>, std::function<ReturnType(Args...)>>(std::pair<void*, int*>(static_cast<void*>(this), (int*)a_method), tempFunction));
@@ -49,7 +49,7 @@ namespace sdel
 		 * \Unbinds member function \param a_method from instance \param t  of type \tparam T
 		 */
 		template<typename T>
-		void Unbind(T* t, ReturnType(T::* a_method)(Args...))
+		void unbind(T* t, ReturnType(T::* a_method)(Args...))
 		{
 			auto found = m_functions.find(std::pair<void*, int*>(static_cast<void*>(t), ((int*)void_cast(a_method))));
 			assert(found != m_functions.end());
@@ -60,10 +60,9 @@ namespace sdel
 		/*
 		 * \Unbinds global function \param a_method
 		 */
-		template<typename T>
-		void Unbind(ReturnType(T::* a_method)(Args...))
+		void unbind(ReturnType(a_method)(Args...))
 		{
-			auto found = m_functions.find(std::pair<void*, void(*)()>(static_cast<void*>(this), static_cast<void(*)()>(a_method)));
+			auto found = m_functions.find(std::pair<void*, int*>(static_cast<void*>(this), (int*)(a_method)));
 			assert(found != m_functions.end());
 			m_functions.erase(found);
 		}
@@ -87,7 +86,7 @@ namespace sdel
 		/*
 		 * \this removes all bound functions at once.
 		 */
-		void Clear()
+		void clear()
 		{
 			m_functions.clear();
 		}
