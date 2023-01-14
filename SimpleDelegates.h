@@ -97,6 +97,7 @@ namespace sdel
 
 
 		//void cast is an idea taken from:https://stackoverflow.com/a/37502759/20211112 thanks to Karlo Mlicevic
+		//Cannot tell if is stable and to what extent, but according to tests it works 
 		template<typename T, typename R>
 		void* void_cast(R(T::* f)())
 		{

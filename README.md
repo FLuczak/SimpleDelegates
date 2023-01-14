@@ -4,7 +4,7 @@ Simple delegates is a simple implementation of multicast delegates created and m
 
 For now Simple delegates only handles member functions, however it will be extended to support lambdas, global and static functions.
 
-**IMPORTANT: SIMPLE HEADERS CAN BE USED FREELY BY THE END USER. IT IS NOT RECOMMENDED TO USE IT IN PROJECTS OF HIGH IMPORTANCE OR VALUE, AS THE LIBRARY WAS NEVER MEANT FOR THEM.**
+**IMPORTANT: SIMPLE DELEGATES CAN BE USED FREELY BY THE END USER. IT IS NOT RECOMMENDED TO USE IT IN PROJECTS OF HIGH IMPORTANCE OR VALUE, AS THE LIBRARY WAS NEVER MEANT FOR THEM.**
 
 # Integration
 **Simple delegates.h** is the only is the single required file. You need to add:
