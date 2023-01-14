@@ -31,7 +31,8 @@ namespace sdel
 		void bind(T* t, ReturnType(T::* a_method)(Args...))
 		{
 			std::function<ReturnType(Args...)> tempFunction = [=](Args ... as) { (t->*a_method)(as...); };
-			m_functions.insert(std::pair<std::pair<void*, void*>, std::function<ReturnType(Args...)>>(std::pair<void*, void*>(static_cast<void*>(t), (void*)(&a_method)), tempFunction));
+			auto p = void_cast(a_method);
+			m_functions.insert(std::pair<std::pair<void*, int*>, std::function<ReturnType(Args...)>>(std::pair<void*, int*>(static_cast<void*>(t), (int*)p), tempFunction));
 		}
 
 		/*
@@ -41,7 +42,7 @@ namespace sdel
 		void bind(ReturnType(*a_method)(Args...))
 		{
 			std::function<ReturnType(Args...)> tempFunction = [=](Args ... as) { (*a_method)(as...); };
-			m_functions.insert(std::pair<std::pair<void*, void*>, std::function<ReturnType(Args...)>>(std::pair<void*, void*>(static_cast<void*>(this), static_cast<void*>(&a_method)), tempFunction));
+			m_functions.insert(std::pair<std::pair<void*, int*>, std::function<ReturnType(Args...)>>(std::pair<void*, int*>(static_cast<void*>(this), (int*)a_method), tempFunction));
 		}
 
 		/*
@@ -50,8 +51,8 @@ namespace sdel
 		template<typename T>
 		void unbind(T* t, ReturnType(T::* a_method)(Args...))
 		{
-			auto found = m_functions.find(std::pair<void*, void*>(static_cast<void*>(t), static_cast<void*>(&a_method)));
-			assert(found == m_functions.end(), "Trying to unbind function that is not bound");
+			auto found = m_functions.find(std::pair<void*, int*>(static_cast<void*>(t), ((int*)void_cast(a_method))));
+			assert(found != m_functions.end());//ARE YOU TRYING TO BIND A NOT BOUND FUNCTION? IT IS FORBIDDEN!!
 			m_functions.erase(found);
 		}
 
@@ -62,8 +63,8 @@ namespace sdel
 		template<typename T>
 		void unbind(ReturnType(T::* a_method)(Args...))
 		{
-			auto found = m_functions.find(std::pair<void*, void*>(static_cast<void*>(this), static_cast<void*>(&a_method)));
-			assert(found == m_functions.end(), "Trying to unbind function that is not bound");
+			auto found = m_functions.find(std::pair<void*, void(*)()>(static_cast<void*>(this), static_cast<void(*)()>(a_method)));
+			assert(found != m_functions.end());//ARE YOU TRYING TO BIND A NOT BOUND FUNCTION? IT IS FORBIDDEN!!
 			m_functions.erase(found);
 		}
 
@@ -75,7 +76,7 @@ namespace sdel
 		 */
 		void operator() (Args... args)
 		{
-			std::map<std::pair<void*, void*>, std::function<ReturnType(Args...)>> duplicate_functions = m_functions;
+			std::map<std::pair<void*, int*>, std::function<ReturnType(Args...)>> duplicate_functions = m_functions;
 			if (m_functions.size() == 0)return;
 			for (auto& func : duplicate_functions)
 			{
@@ -92,8 +93,23 @@ namespace sdel
 		}
 
 	private:
-		std::map<std::pair<void*, void*>, std::function<ReturnType(Args...)>> m_functions = {};
+		std::map<std::pair<void*, int*>, std::function<ReturnType(Args...)>> m_functions = {};
+
+
+		//void cast is an idea taken from:https://stackoverflow.com/a/37502759/20211112 thanks to Karlo Mlicevic
+		template<typename T, typename R>
+		void* void_cast(R(T::* f)())
+		{
+			union
+			{
+				R(T::* pf)();
+				void* p;
+			};
+			pf = f;
+			return p;
+		}
 	};
 
 }
+
 
