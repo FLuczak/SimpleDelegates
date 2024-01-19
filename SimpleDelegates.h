@@ -1,7 +1,7 @@
 #pragma once
 #include <functional>
-#include <map>
 #include <cassert>
+#include <typeindex>
 
 //Simple delegates is a small library created and maintained by Franciszek Luczak.
 //It was created for small personal projects created in C++.
@@ -13,102 +13,107 @@
 
 //uncomment to remove asserts
 //#define NDEBUG
-
-namespace sdel
+namespace fluczak
 {
-	template <typename>
-	class Delegate;
-
-	template <typename ReturnType, typename... Args>
-	class Delegate<ReturnType(Args...)>
+	namespace sdel
 	{
-	public:
-		/*
-		 * Binds a member  function \param a_method  of type:
-		 * \tparam T of an instance: \param t
-		 */
-		template<typename T>
-		void bind(T* t, ReturnType(T::* a_method)(Args...))
-		{
-			std::function<ReturnType(Args...)> tempFunction = [=](Args ... as) { (t->*a_method)(as...); };
-			auto p = void_cast(a_method);
-			m_functions.insert(std::pair<std::pair<void*, int*>, std::function<ReturnType(Args...)>>(std::pair<void*, int*>(static_cast<void*>(t), (int*)p), tempFunction));
-		}
+		template <typename>
+		class Delegate;
 
-		/*
-		 * Binds a global  function \param a_method  of type:
-		 * \tparam T
-		*/
-		void bind(ReturnType(*a_method)(Args...))
+		template <typename ReturnType, typename... Args>
+		class Delegate<ReturnType(Args...)>
 		{
-			std::function<ReturnType(Args...)> tempFunction = [=](Args ... as) { (*a_method)(as...); };
-			m_functions.insert(std::pair<std::pair<void*, int*>, std::function<ReturnType(Args...)>>(std::pair<void*, int*>(static_cast<void*>(this), (int*)a_method), tempFunction));
-		}
-
-		/*
-		 * \Unbinds member function \param a_method from instance \param t  of type \tparam T
-		 */
-		template<typename T>
-		void unbind(T* t, ReturnType(T::* a_method)(Args...))
-		{
-			auto found = m_functions.find(std::pair<void*, int*>(static_cast<void*>(t), ((int*)void_cast(a_method))));
-			assert(found != m_functions.end());
-			m_functions.erase(found);
-		}
-
-
-		/*
-		 * \Unbinds global function \param a_method
-		 */
-		void unbind(ReturnType(a_method)(Args...))
-		{
-			auto found = m_functions.find(std::pair<void*, int*>(static_cast<void*>(this), (int*)(a_method)));
-			assert(found != m_functions.end());
-			m_functions.erase(found);
-		}
-
-		/*
-		 * Invoke all bound functions. Can call with arguments
-		 * of previously defined types.IMPORTANT: It is not recommended
-		 * to bind or call anything with type other than void- it is possible,
-		 * but the return value will be discarded...
-		 */
-		void operator() (Args... args)
-		{
-			std::map<std::pair<void*, int*>, std::function<ReturnType(Args...)>> duplicate_functions = m_functions;
-			if (m_functions.size() == 0)return;
-			for (auto& func : duplicate_functions)
+		public:
+			/*
+			 * Binds a member  function \param a_method  of type:
+			 * \tparam T of an instance: \param t
+			 */
+			template<typename T>
+			void bind(T* t, ReturnType(T::* a_method)(Args...))
 			{
-				func.second(args...);
+				auto tempFunction = [=](Args ... as) { (t->*a_method)(as...); };
+				auto hash_value = hash_member_function(t, a_method);
+				m_functions.insert(std::pair<std::size_t, std::function<ReturnType(Args...)>>(hash_value, tempFunction));
 			}
-		}
 
-		/*
-		 * \this removes all bound functions at once.
-		 */
-		void clear()
-		{
-			m_functions.clear();
-		}
-
-	private:
-		std::map<std::pair<void*, int*>, std::function<ReturnType(Args...)>> m_functions = {};
-
-
-		//void cast is an idea taken from:https://stackoverflow.com/a/37502759/20211112 thanks to Karlo Mlicevic
-		template<typename T, typename R>
-		void* void_cast(R(T::* f)(Args...))
-		{
-			union
+			/*
+			 * Binds a global  function \param a_method  of type:
+			 * \tparam T
+			*/
+			void bind(ReturnType(*a_method)(Args...))
 			{
-				R(T::* pf)(Args...);
-				void* p;
-			};
-			pf = f;
-			return p;
-		}
-	};
+				auto tempFunction = [=](Args ... as) { (*a_method)(as...); };
+				auto hash_value = std::hash<ReturnType(*)(Args...)>()(a_method);
+				m_functions.insert(std::pair<std::size_t, std::function<ReturnType(Args...)>>(hash_value, tempFunction));
+			}
 
+			/*
+			 * \Unbinds member function \param a_method from instance \param t  of type \tparam T
+			 */
+			template<typename T>
+			void unbind(T* t, ReturnType(T::* a_method)(Args...))
+			{
+				auto found = m_functions.find(hash_member_function(t, a_method));
+				assert(found != m_functions.end());
+				m_functions.erase(found);
+			}
+
+			/*
+			 * \Unbinds global function \param a_method
+			 */
+			void unbind(ReturnType(*a_method)(Args...))
+			{
+				auto hash_value = std::hash<ReturnType(*)(Args...)>()(a_method);
+				auto found = m_functions.find(hash_value);
+				assert(found != m_functions.end());
+				m_functions.erase(found);
+			}
+
+			/*
+			 * Invoke all bound functions. Can call with arguments
+			 * of previously defined types.IMPORTANT: It is not recommended
+			 * to bind or call anything with type other than void- it is possible,
+			 * but the return value will be discarded...
+			 */
+			void operator() (Args... args)
+			{
+				auto duplicate_functions = m_functions;
+				if (m_functions.size() == 0)return;
+				for (auto& func : duplicate_functions)
+				{
+					func.second(args...);
+				}
+			}
+
+			/*
+			 * \this removes all bound functions at once.
+			 */
+			void clear()
+			{
+				m_functions.clear();
+			}
+
+		private:
+			std::unordered_map<std::size_t, std::function<ReturnType(Args...)>> m_functions = {};
+
+
+			template<typename T, typename R>
+			std::size_t hash_member_function(T* instance, R(T::* func)(Args...))
+			{
+				std::hash<T*> hash_instance;
+				std::hash<std::string> hash_string;
+
+				char buf[sizeof(func)];
+				std::memcpy(&buf, &func, sizeof(func));
+				std::string temp(buf, sizeof(func));
+
+				const std::size_t instance_hash = hash_instance(instance);
+				const std::size_t char_hash = hash_string(temp);
+
+				// Combine hashes to create a unique hash for the pair
+				return char_hash ^ (char_hash + 0x9e3779b9 + (instance_hash << 6) + (instance_hash >> 2));
+			}
+		};
+
+	}
 }
-
-

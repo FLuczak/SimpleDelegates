@@ -31,8 +31,8 @@ class A
 ```
 We can declare delegates:
 ```
-sdel::Delegate<void()> voidDelegate;
-sdel::Delegate<void(int,int)> voidDoubleIntDelegate;
+fluczak::sdel::Delegate<void()> voidDelegate;
+fluczak::sdel::Delegate<void(int,int)> voidDoubleIntDelegate;
 ```
 We can bind our functions to delegates:
 ```
