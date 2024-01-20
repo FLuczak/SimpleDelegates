@@ -1,7 +1,9 @@
 #pragma once
 #include <functional>
+#include <map>
 #include <cassert>
 #include <typeindex>
+#include <string>
 
 //Simple delegates is a small library created and maintained by Franciszek Luczak.
 //It was created for small personal projects created in C++.
@@ -32,7 +34,7 @@ namespace fluczak
 			void bind(T* t, ReturnType(T::* a_method)(Args...))
 			{
 				auto tempFunction = [=](Args ... as) { (t->*a_method)(as...); };
-				auto hash_value = hash_member_function(t, a_method);
+				auto hash_value = HashMemberFunction(t, a_method);
 				m_functions.insert(std::pair<std::size_t, std::function<ReturnType(Args...)>>(hash_value, tempFunction));
 			}
 
@@ -53,7 +55,7 @@ namespace fluczak
 			template<typename T>
 			void unbind(T* t, ReturnType(T::* a_method)(Args...))
 			{
-				auto found = m_functions.find(hash_member_function(t, a_method));
+				auto found = m_functions.find(HashMemberFunction(t, a_method));
 				assert(found != m_functions.end());
 				m_functions.erase(found);
 			}
@@ -98,17 +100,17 @@ namespace fluczak
 
 
 			template<typename T, typename R>
-			std::size_t hash_member_function(T* instance, R(T::* func)(Args...))
+			std::size_t HashMemberFunction(T* instance, R(T::* func)(Args...))
 			{
-				std::hash<T*> hash_instance;
-				std::hash<std::string> hash_string;
+				std::hash<T*> hashInstance;
+				std::hash<std::string> hashString;
 
 				char buf[sizeof(func)];
 				std::memcpy(&buf, &func, sizeof(func));
-				std::string temp(buf, sizeof(func));
+				const std::string temp(buf, sizeof(func));
 
-				const std::size_t instance_hash = hash_instance(instance);
-				const std::size_t char_hash = hash_string(temp);
+				const std::size_t instance_hash = hashInstance(instance);
+				const std::size_t char_hash = hashString(temp);
 
 				// Combine hashes to create a unique hash for the pair
 				return char_hash ^ (char_hash + 0x9e3779b9 + (instance_hash << 6) + (instance_hash >> 2));
